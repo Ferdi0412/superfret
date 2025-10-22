@@ -1,3 +1,12 @@
+# CMake
+build/**
+**/CMakeCache.txt
+**/CMakeFiles/
+**/build.ninja
+**/.ninja*
+**/cmake_install.cmake
+
+
 # Prerequisites
 *.d
 
