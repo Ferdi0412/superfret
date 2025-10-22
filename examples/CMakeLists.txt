@@ -5,3 +5,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(midi_quick_chords midi_quick_chords.cpp)
 target_link_libraries(midi_quick_chords PRIVATE midi)
+
+add_executable(midi_scale midi_scale.cpp)
+target_link_libraries(midi_scale PRIVATE midi music)

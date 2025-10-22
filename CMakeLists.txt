@@ -14,6 +14,10 @@ else()
     message(FATAL_ERROR "Could not find appropriate MIDI libraries")
 endif()
 
+### 2) Music  ###
+add_library(music INTERFACE)
+target_include_directories(music INTERFACE music)
+
 ### Examples  ###
 option(BUILD_EXAMPLES "Build examples from examples/" ON)
 if (BUILD_EXAMPLES)

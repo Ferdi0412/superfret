@@ -1,7 +1,3 @@
-/// @todo - Remove the prints
-#include <iostream>
-
-
 #ifdef _WIN32
     extern "C" {
         #include <Windows.h>
