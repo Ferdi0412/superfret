@@ -1,6 +1,7 @@
 /**
- * This example plays a C-Major chord,
- * with root at C4, via. my MIDI library.
+ * @file midi_quick_chords.cpp
+ * @brief Shows some simple ways of playing chords
+ * @note Note "60" is middle C - "C4", each increment of 1 is a halfstep
  */
 #include <midi.h>
 
