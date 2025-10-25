@@ -8,3 +8,6 @@ target_link_libraries(midi_quick_chords PRIVATE midi)
 
 add_executable(midi_scale midi_scale.cpp)
 target_link_libraries(midi_scale PRIVATE midi music)
+
+add_executable(midi_discover midi_discover.cpp)
+target_link_libraries(midi_discover PRIVATE midi music)

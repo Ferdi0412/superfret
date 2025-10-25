@@ -44,7 +44,7 @@
  * out >> 60;
  * ```
  * 
- * @todo Implement MidiOut& operator=(const MidiOutInfo&);
+ * @todo Implement MidiOut& operator=(const Info&);
  * @todo Implement void set_velocity(uint8_t);
  * @todo Implement broader MidiMsg type
  * @todo Implement MidiIn
@@ -52,19 +52,44 @@
 class MidiOut {
     public:
         /**
-         * @struct MidiOut::MidiOutInfo
+         * @struct MidiOut::Info
          * @brief This is provided for use in searching for MIDI outs.
          * 
-         * @note The only useful method is `std::string name() const`
+         * @note The only useful methods are:
+         * bool external() const;
+         * std::string name() const;
+         * size_t notes() const;
+         * uint16_t channels() const;
          */
-        struct MidiOutInfo;
+        struct Info;
 
     public:
         /// @brief Discover all currently connected/available outputs
-        static std::vector<MidiOutInfo> discover();
+        static std::vector<Info> discover();
 
         /// @brief Count the number of currently connected/available outs
         static size_t count();
+    
+    public:
+        /// @brief Whether this @b MidiOut has connected
+        /// @note Does not test that the connection is still valid 
+        bool connected() const;
+
+        /// @brief Whether this is an external MIDI device
+        bool external() const;
+
+        /// @brief The name of the MIDI out target 
+        std::string name() const;
+
+        /// @brief The number of notes that can be played simultaneously
+        /// @note For @b Windows this returns 0 for @b external devices 
+        size_t notes() const;
+
+        /// @brief Mask for channels contained in this device
+        /// 0x0001 Means only channl 0 is available
+        /// 0xFFFF Means all 16 MIDI channels are available
+        /// @note For @b Windows this returns 0 for @b external devices
+        uint16_t channel_mask() const;
 
     public:
         /// @brief Initialize an unconnected instance
@@ -74,8 +99,11 @@ class MidiOut {
         /// @brief Default destructor, hidden due to PIMPL implementation
         ~MidiOut();
 
-        /// @brief Connect to a desired MIDI port
+        /// @brief Connect to the desired MIDI port
         MidiOut(size_t port);
+
+        /// @brief Try to connect to the desired MIDI out 
+        MidiOut& operator=(const Info& out);
 
     public:
         /// @brief Turn on note with default velocity 
@@ -93,27 +121,56 @@ class MidiOut {
         MidiOut& operator>>(std::pair<uint8_t, uint8_t> note_n_vel);
 
     protected:
-        friend MidiOutInfo;     
+        friend Info;     
         struct Impl;
         std::unique_ptr<Impl> _pimpl;
 
     public:
-        struct MidiOutInfo {
+        struct Info {
+            /// @note
+            /// The Windows MM API treats the "internal" and "external"
+            /// MIDI outputs slightly differently
+            /// @todo - Document this above
+            /// 
+            /// The Windows MM API allows additional features to be
+            /// retrieved for various MIDI outs:
+            /// manufacturer_id
+            /// product_id
+            /// version (major:minor)
+            /// type of device
+            /// voices
+            /// support
+            ///
+            /// For more info see: 
+            /// https://learn.microsoft.com/en-us/windows/win32/api/mmeapi/ns-mmeapi-midioutcaps
             protected:
+                friend MidiOut;
                 std::unique_ptr<Impl> _pimpl;
 
             public:
+                /// @brief Returns `true` if this represents is a physical MIDI connection
+                bool external() const;
+
+                /// @brief Read the name of the MIDI out 
                 std::string name() const;
 
-            public:
-                MidiOutInfo(std::unique_ptr<Impl>&& pimpl);
-                ~MidiOutInfo();
+                /// @brief How many simulataneous notes this can play 
+                size_t notes() const;
 
-                MidiOutInfo(const MidiOutInfo& o);
-                MidiOutInfo& operator=(const MidiOutInfo& o);
+                /// @brief Mask for the channels contained in this device
+                /// 0x0001 Means only channel 0 is available
+                /// 0xFFFF Means all 16 MIDI channels are available
+                uint16_t channel_mask() const;
+
+            public:
+                Info(std::unique_ptr<Impl>&& pimpl);
+                ~Info();
+
+                Info(const Info& o);
+                Info& operator=(const Info& o);
                 
-                MidiOutInfo(MidiOutInfo&&);
-                MidiOutInfo& operator=(MidiOutInfo&&);
+                Info(Info&&);
+                Info& operator=(Info&&);
         };
 };
 

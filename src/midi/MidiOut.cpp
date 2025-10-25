@@ -13,6 +13,23 @@
 #include "MidiError.hpp"
 
 /** === System Specific APIs === */
+/// @note Provides the following methods:
+///
+/// std::string midi_out_name(t port)
+/// @returns "" if not a real port, or unavailable
+///
+/// bool midi_out_open(*out, port)
+/// @param out should be NULL, and will be set to a valid port
+/// @note does not actually check for NULL at the moment,
+///       nor automatically close it if open 
+/// @return false in case of error, true on success
+///
+/// bool midi_out_close(*out)
+/// @param out is set to NULL on success, assumes is valid output
+/// @return false in case of error, true on success
+
+#ifdef _WIN32
+    /// @note Windows MultiMedia implementation
 std::string midi_out_name(UINT port) {
     char buffer[4096];
     MIDIOUTCAPS moc;
@@ -24,6 +41,33 @@ std::string midi_out_name(UINT port) {
         return "";
 
     return std::string(buffer);
+}
+
+bool midi_out_external(UINT port) {
+    MIDIOUTCAPS moc;
+
+    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) != MMSYSERR_NOERROR )
+        return false;
+    
+    return moc.wTechnology == MOD_MIDIPORT;
+}
+
+size_t midi_out_notes(UINT port) {
+    MIDIOUTCAPS moc;
+
+    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) != MMSYSERR_NOERROR )
+        return 0;
+    
+    return moc.wNotes;
+}
+
+uint16_t midi_out_channel_mask(UINT port) {
+    MIDIOUTCAPS moc;
+
+    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) )
+        return 0;
+    
+    return moc.wChannelMask;
 }
 
 bool midi_out_open(HMIDIOUT* out, UINT port) {
@@ -57,19 +101,52 @@ bool midi_out_send(HMIDIOUT out, uint8_t status_byte, uint8_t data0, uint8_t dat
         return false;
     return true;
 }
+#else
+    #error "Only implemented for WIN32 at the moment!"
+#endif // _WIN32
 
 /** === MidiOut Impl === */
+/**
+ * @class MidiOut::Impl
+ * @brief Hides the Implementations of the MIDI port
+ * 
+ * The class is currently based on the following @b assumption:
+ *   The MIDI implementation is similar to the @b WIN32 implementation,
+ *   with a separate "port" value identifying the specific obejct,
+ *   and handles for the "connection" established to the port
+ * 
+ * Importantly implements the following methods that Info needs
+ * 
+ * std::string name() const;
+ * size_t notes() const;
+ * uint16_t channels() const;
+ */
 struct MidiOut::Impl {
-    // Main method of construction
+    #ifndef _WIN32
+        #warning "Assumes MIDI implementation has separate 'port' and 'connection handle'"
+    #endif
+    /// @brief Create "shallow instance" - not actually connected to the port 
     Impl(UINT p): port(p), out(NULL) {}
 
-    // Shallow copy will not be connected to the MIDI port!
+    /// @brief Create a "shallow" copy of self - utility for later 
     std::unique_ptr<Impl> shallow_copy() const {
         return std::make_unique<Impl>(port);
     }
 
+    bool external() const {
+        return midi_out_external(port);
+    }
+
     std::string name() const {
         return midi_out_name(port);
+    }
+
+    size_t notes() const {
+        return midi_out_notes(port);
+    }
+
+    uint16_t channel_mask() const {
+        return midi_out_channel_mask(port);
     }
 
     bool close() {
@@ -110,33 +187,54 @@ struct MidiOut::Impl {
     }
 
     private:
-        UINT     port;
-        HMIDIOUT out;
+        #ifdef _WIN32
+            UINT     port;
+            HMIDIOUT out;
+        #endif
 };
 
-/** === MidiOutInfo Methods === */
-MidiOut::MidiOutInfo::MidiOutInfo(std::unique_ptr<Impl>&& pimpl): _pimpl(std::move(pimpl)) {};
-MidiOut::MidiOutInfo::~MidiOutInfo() = default;
+/** === Info Methods === */
+MidiOut::Info::Info(std::unique_ptr<Impl>&& pimpl): _pimpl(std::move(pimpl)) {};
+MidiOut::Info::~Info() = default;
 
-MidiOut::MidiOutInfo::MidiOutInfo(const MidiOutInfo& o): _pimpl(o._pimpl->shallow_copy()) {};
+MidiOut::Info::Info(const Info& o): _pimpl(o._pimpl->shallow_copy()) {};
 
-MidiOut::MidiOutInfo& MidiOut::MidiOutInfo::operator=(const MidiOutInfo& o) {
+MidiOut::Info& MidiOut::Info::operator=(const Info& o) {
     _pimpl = o._pimpl->shallow_copy();
     return *this;
 };
 
-MidiOut::MidiOutInfo::MidiOutInfo(MidiOutInfo&&) = default;
-MidiOut::MidiOutInfo& MidiOut::MidiOutInfo::operator=(MidiOutInfo&&) = default;
+MidiOut::Info::Info(Info&&) = default;
+MidiOut::Info& MidiOut::Info::operator=(Info&&) = default;
 
-std::string MidiOut::MidiOutInfo::name() const {
-    if ( _pimpl )
-        return _pimpl->name();
-    return "";
+// The MidiOut::Info will never have a NULL _pimpl field
+bool MidiOut::Info::external() const {
+    // if ( _pimpl )
+    return _pimpl->external();
+    // return false;
+}
+
+std::string MidiOut::Info::name() const {
+    // if ( _pimpl )
+    return _pimpl->name();
+    // return "";
+}
+
+size_t MidiOut::Info::notes() const {
+    // if ( _pimpl )
+    return _pimpl->notes();
+    // return 0;
+}
+
+uint16_t MidiOut::Info::channel_mask() const {
+    // if ( _pimpl )
+    return _pimpl->channel_mask();
+    // return 0;
 }
 
 /** === MidiOut Methods === */
-std::vector<MidiOut::MidiOutInfo> MidiOut::discover() {
-    std::vector<MidiOutInfo> found;
+std::vector<MidiOut::Info> MidiOut::discover() {
+    std::vector<Info> found;
     for ( size_t i = 0; i < midi_out_count(); i++ )
         found.emplace_back(std::make_unique<Impl>(i));
     return found;
@@ -146,12 +244,48 @@ size_t MidiOut::count() {
     return midi_out_count();
 }
 
+bool MidiOut::connected() const {
+    if ( _pimpl )
+        return _pimpl->connected();
+    return false;
+}
+
+bool MidiOut::external() const {
+    if ( _pimpl )
+        return _pimpl->external();
+    return false;
+}
+
+std::string MidiOut::name() const {
+    if ( _pimpl )
+        return _pimpl->name();
+    return "";
+}
+
+size_t MidiOut::notes() const {
+    if ( _pimpl )
+        return _pimpl->notes();
+    return 0;
+}
+
+uint16_t MidiOut::channel_mask() const {
+    if ( _pimpl )
+        return _pimpl->channel_mask();
+    return 0;
+}
+
 MidiOut::MidiOut() = default;
 MidiOut::~MidiOut() = default;
 
 MidiOut::MidiOut(size_t port): _pimpl(std::make_unique<Impl>(port)) {
     if ( !_pimpl->connect() )
         _pimpl = nullptr;
+}
+
+MidiOut& MidiOut::operator=(const Info& out) {
+    _pimpl = out._pimpl->shallow_copy();
+    _pimpl->connect();
+    return *this;
 }
 
 MidiOut& MidiOut::operator<<(uint8_t note_on) {
