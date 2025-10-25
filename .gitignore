@@ -4,6 +4,8 @@
 # Documentation except 'Doxyfile'
 docs/**
 !docs/Doxyfile
+!docs/pages/
+!docs/pages/**/*.md
 
 # CMake
 build/**
