@@ -25,8 +25,13 @@ Some examples are provided under `examples/`, use `cmake -S . -B build -DBUILD_E
 example using `./build/examples/midi_scale` on unix-based systems or
 `.\build\examples\midi_scale` on Windows.
 
-## Docs
-The documentation is intended to be made using `doxygen`.
+### Tests
+Some tests are under `tests/`, and will be built by setting `-DBUILD_TESTS=ON`. They will be built
+under `build/tests/`. These are built using **Google Tests**.
+
+### Docs
+The documentation is intended to be made using `doxygen`. I am also plan to use
+**Doxygen Awesome** to help with the appearance of the documentation.
 To build the documentation, [download doxygen](https://www.doxygen.nl/download.html)
 and follow any relevant steps, then from the repository root:
 
