@@ -1,3 +1,6 @@
 [submodule "dependencies/doxygen-awesome-css"]
 	path = dependencies/doxygen-awesome-css
 	url = git@github.com:/jothepro/doxygen-awesome-css.git
+[submodule "dependencies/googletest"]
+	path = dependencies/googletest
+	url = git@github.com:google/googletest
