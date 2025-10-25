@@ -1,6 +1,10 @@
 # Editor files
 **.vscode
 
+# Documentation except 'Doxyfile'
+docs/**
+!docs/Doxyfile
+
 # CMake
 build/**
 **/CMakeCache.txt
