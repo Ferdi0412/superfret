@@ -11,3 +11,11 @@ option(BUILD_EXAMPLES "Build examples from examples/" ON)
 if (BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+### Tests     ###
+option(BUILD_TESTS "Build tests from tests/" ON)
+if (BUILD_TESTS)
+    add_subdirectory(dependencies/googletest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
