@@ -288,6 +288,11 @@ MidiOut& MidiOut::operator=(const Info& out) {
     return *this;
 }
 
+MidiOut& MidiOut::set_velocity(uint8_t vel) {
+    _vel = 0x7F & vel;
+    return *this;
+}
+
 MidiOut& MidiOut::operator<<(uint8_t note_on) {
     if ( _pimpl )
         if ( !_pimpl->send(0x90, note_on, 120, 0) )

@@ -23,13 +23,13 @@ TIMESTAMP              = DATE
 # Build related configuration options
 #---------------------------------------------------------------------------
 
-EXTRACT_ALL            = YES # This hides warnings about undocumented members
 EXTRACT_STATIC         = YES
 RESOLVE_UNNAMED_PARAMS = YES
 HIDE_UNDOC_MEMBERS     = YES
-HIDE_UNDOC_CLASSES     = YES
-HIDE_UNDOC_NAMESPACES  = YES
+HIDE_UNDOC_CLASSES     = NO
+# HIDE_UNDOC_NAMESPACES  = YES
 INTERNAL_DOCS          = NO # Use \internal to hide from the docs
+HIDE_FRIEND_COMPOUNDS  = YES
 
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
