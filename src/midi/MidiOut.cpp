@@ -11,6 +11,7 @@
 
 #include "MidiOut.hpp"
 #include "MidiError.hpp"
+#include "MidiError.cpp"
 
 /** === System Specific APIs === */
 /// @note Provides the following methods:
@@ -33,52 +34,38 @@
 std::string midi_out_name(UINT port) {
     char buffer[4096];
     MIDIOUTCAPS moc;
-
-    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) != MMSYSERR_NOERROR )
-        return "";
-
+    midi_out_error(midiOutGetDevCaps(port, &moc, sizeof(moc)), "midi_out_name");
     if ( snprintf(buffer, sizeof(buffer), "%s", moc.szPname) >= sizeof(buffer) )
-        return "";
-
+        throw MidiRuntimeError("midi_out_name: buffer overflow");
     return std::string(buffer);
 }
 
 bool midi_out_external(UINT port) {
     MIDIOUTCAPS moc;
-
-    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) != MMSYSERR_NOERROR )
-        return false;
-    
+    midi_out_error(midiOutGetDevCaps(port, &moc, sizeof(moc)), "midi_out_external");
     return moc.wTechnology == MOD_MIDIPORT;
 }
 
 size_t midi_out_notes(UINT port) {
     MIDIOUTCAPS moc;
-
-    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) != MMSYSERR_NOERROR )
-        return 0;
-    
+    midi_out_error(midiOutGetDevCaps(port, &moc, sizeof(moc)), "midi_out_notes");
     return moc.wNotes;
 }
 
 uint16_t midi_out_channel_mask(UINT port) {
     MIDIOUTCAPS moc;
-
-    if ( midiOutGetDevCaps(port, &moc, sizeof(moc)) )
-        return 0;
-    
+    midi_out_error(midiOutGetDevCaps(port, &moc, sizeof(moc)), "midi_out_channel_mask");
     return moc.wChannelMask;
 }
 
 bool midi_out_open(HMIDIOUT* out, UINT port) {
-    if ( midiOutOpen(out, port, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR )
-        return false;
+    midi_out_error(midiOutOpen(out, port, 0, 0, CALLBACK_NULL), "midiOutOpen");
     return true;
 }
 
 bool midi_out_close(HMIDIOUT* out) {
-    if ( midiOutClose(*out) != MMSYSERR_NOERROR )
-        return false;
+    midi_out_error(midiOutReset(*out), "midiOutReset");
+    midi_out_error(midiOutClose(*out), "midiOutClose");
     *out = NULL;
     return true;
 }
@@ -97,8 +84,7 @@ bool midi_out_send(HMIDIOUT out, uint8_t status_byte, uint8_t data0, uint8_t dat
     msg.b[2] = data1 & 0x7F;
     msg.b[3] = 0;
 
-    if ( midiOutShortMsg(out, msg.w) != MMSYSERR_NOERROR )
-        return false;
+    midi_out_error(midiOutShortMsg(out, msg.w), "midiOutShortMsg");
     return true;
 }
 #else
@@ -209,27 +195,19 @@ MidiOut::Info& MidiOut::Info::operator=(Info&&) = default;
 
 // The MidiOut::Info will never have a NULL _pimpl field
 bool MidiOut::Info::external() const {
-    // if ( _pimpl )
     return _pimpl->external();
-    // return false;
 }
 
 std::string MidiOut::Info::name() const {
-    // if ( _pimpl )
     return _pimpl->name();
-    // return "";
 }
 
 size_t MidiOut::Info::notes() const {
-    // if ( _pimpl )
     return _pimpl->notes();
-    // return 0;
 }
 
 uint16_t MidiOut::Info::channel_mask() const {
-    // if ( _pimpl )
     return _pimpl->channel_mask();
-    // return 0;
 }
 
 /** === MidiOut Methods === */
@@ -253,25 +231,25 @@ bool MidiOut::connected() const {
 bool MidiOut::external() const {
     if ( _pimpl )
         return _pimpl->external();
-    return false;
+    throw MidiUnconnected("MidiOut::external - Must connect first!");
 }
 
 std::string MidiOut::name() const {
     if ( _pimpl )
         return _pimpl->name();
-    return "";
+    throw MidiUnconnected("MidiOut::name - Must connect first!");
 }
 
 size_t MidiOut::notes() const {
     if ( _pimpl )
         return _pimpl->notes();
-    return 0;
+    throw MidiUnconnected("MidiOut::notes - Must connect first!");
 }
 
 uint16_t MidiOut::channel_mask() const {
     if ( _pimpl )
         return _pimpl->channel_mask();
-    return 0;
+    throw MidiUnconnected("MidiOut::channel_mask - Must connect first!");
 }
 
 MidiOut::MidiOut() = default;
@@ -295,28 +273,32 @@ MidiOut& MidiOut::set_velocity(uint8_t vel) {
 
 MidiOut& MidiOut::operator<<(uint8_t note_on) {
     if ( _pimpl )
-        if ( !_pimpl->send(0x90, note_on, 120, 0) )
-            ;
+        _pimpl->send(0x90, note_on, 120, 0);
+    else
+        throw MidiUnconnected("MidiOut << - Must connect first!");
     return *this;
 }
 
 MidiOut& MidiOut::operator<<(std::pair<uint8_t, uint8_t> note_n_vel) {
     if ( _pimpl )
-        if ( !_pimpl->send(0x90, note_n_vel.first, note_n_vel.second, 0) )
-            ;
+        _pimpl->send(0x90, note_n_vel.first, note_n_vel.second, 0);
+    else
+        throw MidiUnconnected("MidiOut << - Must connect first!");
     return *this;
 }
 
 MidiOut& MidiOut::operator>>(uint8_t note_off) {
     if ( _pimpl )
-        if ( !_pimpl->send(0x80, note_off, 120, 0) )
-            ;
+        _pimpl->send(0x80, note_off, 120, 0);
+    else
+        throw MidiUnconnected("MidiOut >> - Must connect first!");
     return *this;
 }
 
 MidiOut& MidiOut::operator>>(std::pair<uint8_t, uint8_t> note_n_vel) {
     if ( _pimpl )
-        if ( !_pimpl->send(0x80, note_n_vel.first, note_n_vel.second, 0) )
-            ;
+        _pimpl->send(0x80, note_n_vel.first, note_n_vel.second, 0);
+    else
+        throw MidiUnconnected("MidiOut >> - Must connect first!");
     return *this;
 }

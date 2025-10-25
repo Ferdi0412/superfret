@@ -1,6 +1,6 @@
 ### Libraries ###
 ### 1) MIDI   ### 
-add_library(midi midi/MidiOut.cpp)
+add_library(midi midi/MidiError.cpp midi/MidiOut.cpp)
 target_include_directories(midi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/midi)
 if(WIN32)
     target_link_libraries(midi PUBLIC winmm)

@@ -6,6 +6,7 @@
 #define MIDI_EXCEPTIONS_HPP_
 
 #include <exception>
+#include <string>
 
 /**
  * @class MidiError
@@ -43,12 +44,39 @@ class MidiUnconnected : public MidiError {
 };
 
 /**
+ * @class MidiAllocated
+ * @brief The port/resource is already in use
+ */
+class MidiAllocated : public MidiError {
+    public:
+        explicit MidiAllocated(const std::string& msg): MidiError("MidiAllocated: " + msg) {}
+};
+
+/**
  * @class MidiDisconnected
  * @brief System error in that a MIDI connection was lost or otherwise unavailable
  */
 class MidiDisconnected : public MidiError {
     public:
         explicit MidiDisconnected(const std::string& msg): MidiError("MidiDisconnected: " + msg) {}
+};
+
+/**
+ * @class MidiRuntimeError
+ * @brief Something unexpected happened - Most likely Ferdi's fault :(
+ */
+class MidiRuntimeError : public MidiError {
+    public:
+        explicit MidiRuntimeError(const std::string& msg): MidiError("MidiRuntimeError: " + msg) {}
+};
+
+/**
+ * @class MidiSysError
+ * @brief The system failed to handle the request
+ */
+class MidiSysError : public MidiError {
+    public:
+        explicit MidiSysError(const std::string& msg): MidiError("MidiSysError: " + msg) {}
 };
 
 #endif // MIDI_EXCEPTIONS_HPP_
