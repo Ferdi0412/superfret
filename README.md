@@ -22,8 +22,8 @@ cmake --build build
 
 ### Examples
 Some examples are provided under `examples/`, use `cmake -S . -B build -DBUILD_EXAMPLES=ON` to build them. This will allow you to run them for 
-example using `./build/midi_scale` on unix-based systems or
-`.\build\midi_scale` on Windows.
+example using `./build/examples/midi_scale` on unix-based systems or
+`.\build\examples\midi_scale` on Windows.
 
 ## Docs
 The documentation is intended to be made using `doxygen`.
