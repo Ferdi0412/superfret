@@ -1,0 +1,13 @@
+/* For all possible values, view 'dependencies/doxygen-awesome-css/doxygen-awesome.css' */
+
+/* Light mode theme */
+html {
+
+}
+
+/* Dark mode theme */
+@media (prefers-color-scheme: dark) {
+    html:not(.light-mode) {
+
+    }
+}

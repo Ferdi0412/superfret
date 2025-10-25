@@ -4,6 +4,7 @@
 # Documentation except 'Doxyfile'
 docs/**
 !docs/Doxyfile
+!docs/style.css
 !docs/pages/
 !docs/pages/**/*.md
 
